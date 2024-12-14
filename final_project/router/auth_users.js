@@ -5,13 +5,18 @@ const regd_users = express.Router();
 
 let users = [];
 
-const isValid = (username)=>{ //returns boolean
-//write code to check is the username is valid
-}
+// Check if the username is valid
+const isValid = (username) => { // returns boolean
+    // Check if the username exists in the users array
+    return users.some(user => user.username === username);
+};
 
-const authenticatedUser = (username,password)=>{ //returns boolean
-//write code to check if username and password match the one we have in records.
-}
+// Authenticate user by checking username and password match
+const authenticatedUser = (username, password) => { // returns boolean
+    // Find a user with matching username and password
+    return users.some(user => user.username === username && user.password === password);
+};
+
 
 //only registered users can login
 regd_users.post("/login", (req,res) => {
@@ -28,3 +33,4 @@ regd_users.put("/auth/review/:isbn", (req, res) => {
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
+
