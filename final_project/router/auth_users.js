@@ -18,10 +18,17 @@ const authenticatedUser = (username, password) => { // returns boolean
 };
 
 
-//only registered users can login
 regd_users.post("/login", (req,res) => {
   //Write your code here
-  return res.status(300).json({message: "Yet to be implemented"});
+  const username = req.body.username;
+  const password = req.body.password;
+ 
+  if (!username || !password){
+   return res.status(404).json({message:"username or password is missing"})
+  }
+  if (authenticatedUser(username,password)) {
+   return res.status(300).json({message: "login successfully"});
+  }
 });
 
 // Add a book review
