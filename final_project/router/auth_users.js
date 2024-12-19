@@ -18,53 +18,86 @@ const authenticatedUser = (username, password) => { // returns boolean
 };
 
 
-regd_users.post("/login", (req,res) => {
-  //Write your code here
+regd_users.post("/login", (req, res) => {
   const username = req.body.username;
   const password = req.body.password;
- 
-  if (!username || !password){
-   return res.status(404).json({message:"username or password is missing"})
+
+  if (!username || !password) {
+    return res.status(404).json({ message: "Username or password is missing" });
   }
-  if (authenticatedUser(username,password)) {
-   return res.status(300).json({message: "login successfully"});
+
+  if (authenticatedUser(username, password)) {
+    // Store username in session
+    req.session.username = username;
+
+    // Generate a JWT token and store it in the session
+    const token = jwt.sign({ username }, "access", { expiresIn: "1h" });
+    req.session.authorization = { accessToken: token };
+
+    return res.status(200).json({ message: "Login successful" });
+  } else {
+    return res.status(401).json({ message: "Invalid username or password" });
   }
 });
 
+
 // Add a book review
+
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  //Write your code here
   if (!req.session || !req.session.username) {
-    return res.status(401).json({ message: 'User not logged in' });
+    return res.status(401).json({ message: "User not logged in" });
   }
+
   const { isbn } = req.params;
-  const {review} = req.query;
+  const { review } = req.query; // Review passed as a query parameter
   const username = req.session.username;
 
+  // Validate if book exists
   if (!books[isbn]) {
-    return res.status(404).json({ message: 'Book not found.' });
+    return res.status(404).json({ message: "Book not found" });
   }
+
   if (!review) {
-    return res.status(400).json({ message: 'Review text is required.' });
+    return res.status(400).json({ message: "Review text is required" });
   }
 
   const book = books[isbn];
-  if(!book.review){
-    book.review={}
+
+  // Initialize reviews object if it doesn't exist
+  if (!book.reviews) {
+    book.reviews = {};
   }
-  const action = book.review[username] ? "updated" : "added";
-  books.review[username] = review;
-  return res.status(300).json(
-    {message: `review ${action} successfully`},
-    {
-    review: book.review
+
+  // Determine action: Add or Update
+  const action = book.reviews[username] ? "updated" : "added";
+  book.reviews[username] = review;
+
+  return res.status(200).json({
+    message: `Review ${action} successfully`,
+    reviews: book.reviews,
   });
 });
 
-regd_users.delete("/auth/review/:isbn", (req,res)=>{
-    const username = req.session.username;
-    
-})
+
+// Delete a book review
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+  if (!req.session || !req.session.username) {
+    return res.status(401).json({ message: "User not logged in" });
+  }
+
+  const { isbn } = req.params;
+  const username = req.session.username;
+
+  // Validate if book exists
+  if (!books[isbn] || !books[isbn].reviews || !books[isbn].reviews[username]) {
+    return res.status(404).json({ message: "No review found to delete" });
+  }
+
+  delete books[isbn].reviews[username]; // Remove the review
+
+  return res.status(200).json({ message: "Review deleted successfully" });
+});
+
 module.exports.authenticated = regd_users;
 module.exports.isValid = isValid;
 module.exports.users = users;
